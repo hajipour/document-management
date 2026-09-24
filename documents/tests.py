@@ -1,5 +1,8 @@
 import json
+import tempfile
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -44,3 +47,24 @@ class DocumentAuthorizationTests(TestCase):
         self.alice.is_staff = True
         self.alice.save(update_fields=["is_staff"])
         self.assertEqual(self.client.get(reverse("admin-documents")).status_code, 200)
+
+    def test_document_can_be_created_with_an_uploaded_file(self):
+        self.client.force_login(self.alice)
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                response = self.client.post(
+                    reverse("documents"),
+                    {
+                        "title": "Uploaded notes",
+                        "content": "An attachment",
+                        "file": SimpleUploadedFile(
+                            "notes.txt", b"hello from the upload", "text/plain"
+                        ),
+                    },
+                )
+
+                self.assertEqual(response.status_code, 201)
+                document = Document.objects.get(id=response.json()["id"])
+                self.assertEqual(document.file.read(), b"hello from the upload")
+                self.assertTrue(response.json()["file"].endswith("notes.txt"))

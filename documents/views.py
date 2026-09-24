@@ -9,9 +9,11 @@ from .models import Document
 
 
 def _payload(request: HttpRequest) -> dict:
+    if request.content_type == "multipart/form-data":
+        return request.POST.dict()
     try:
         return json.loads(request.body or b"{}")
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return {}
 
 
@@ -20,6 +22,7 @@ def _serialize(document: Document) -> dict:
         "id": document.id,
         "title": document.title,
         "content": document.content,
+        "file": document.file.url if document.file else None,
         "owner_id": document.owner_id,
         "created_at": document.created_at.isoformat(),
         "updated_at": document.updated_at.isoformat(),
@@ -42,6 +45,7 @@ def documents(request: HttpRequest) -> JsonResponse:
         owner_id=current_user.id,
         title=title.strip(),
         content=data.get("content", ""),
+        file=request.FILES.get("file"),
     )
     return JsonResponse(_serialize(document), status=201)
 

@@ -1,0 +1,6 @@
+[mcp_servers.reforge]
+command = "reforge-mcp"
+
+[mcp_servers.reforge.env]
+REFORGE_PROJECT = "hajipour/document-management"
+REFORGE_REPO_ROOT = "/Users/hosseinhajipour/rewareai/projects/document-management"
